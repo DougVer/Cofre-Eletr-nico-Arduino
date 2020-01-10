@@ -1,0 +1,334 @@
+#include <Servo.h>
+
+#include <LiquidCrystal.h>
+
+LiquidCrystal ihm(8, 9, 10, 11, 12, 13);
+
+char tecla = 48; // Variável para o teclado
+char senhaM[4] = {'2', '0', '1', '8'}; // Variável para senha Master
+char senhaC[4]; // Variável para senha Correta
+char senhaD[4]; // Variável para senha Digitada
+
+byte colunaC=0; // Variável para função "nova senha"
+byte coluna = 0; // Variável para função "digitar senha"
+byte retorno=0; // Variável para loop na função "nova senha"
+byte senhaErrada = 0; // Variável para loop na função "digitar senha"
+byte masterUsada=0; // Variável para contagem de senhas master usadas
+byte travado=5; // Variável que permite nova senha apenas estando em 5
+byte senhaTravar=0; //Variável para travar a senha em 3 alternativas
+byte cofreAberto=0; // Variável para contagem de vezes que o cofre foi aberto
+
+Servo motor;
+
+void setup()
+{
+    ihm.begin(16, 2); // Pino do teclado matricial
+
+    motor.attach(A0); // Pino do motor
+  
+    pinMode(0, INPUT_PULLUP); pinMode(1, INPUT_PULLUP);// Pinos de entrada do teclado
+    pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP);
+    pinMode(4, OUTPUT); pinMode(5, OUTPUT); // Pinos de saída do teclado
+    pinMode(6, OUTPUT); pinMode(7, OUTPUT);
+
+    pinMode(A5, OUTPUT); // Pino do LED
+
+    motor.write(0); //Define o motor como posição 0 graus
+  
+  iniciando("Universidade", "ENIAC",2,5);
+    iniciando("Engenharia", "da Computacao",3,1);
+    iniciando("Sistemas","Embarcados",4,3);
+    iniciando("PROJETO", "INTEGRADOR",4,3);
+    iniciando("SMART LOCK", "", 3, 5);
+    iniciando("INTEGRANTES:", "",0,0);
+    ihm.clear();
+    iniciando("DOUGLAS","RA: 218112017",0,0);
+    iniciando("GUILHERME","RA: 218992017",0,0);
+    iniciando("OTAVIO","RA: 219722017",0,0);
+}
+
+//**************Inicio do loop*******************************************
+//***********************************************************************
+//***********************************************************************
+void loop()
+{
+    teclado(); // função que chama teclado
+    switch (tecla) // Menu inicial
+    {
+      default:
+        ihm.setCursor(0, 0); ihm.print("A-Open B-Setup");
+        ihm.setCursor(0, 1); ihm.print("#-Lock C-Statis.");
+      break;
+
+      case 'A': // Primeiro menu para digitar senha
+        ihm.clear();
+        coluna=0;
+        while (tecla != 'S') {
+          teclado();
+        }
+        while (coluna < 4)
+        {
+          digitarSenha();
+        }
+      break;
+
+      case 'B': // Segundo Menu para cadastrar nova senha
+          ihm.clear();
+          coluna=0;
+          while (tecla != 'S'){
+            teclado();
+          }
+          
+          while(coluna<4)
+          
+          {
+            
+            novaSenha();
+          }
+          
+      break;
+
+      case 'C': // Terceiro menu para Estátisticas
+        ihm.clear();
+        while(tecla!='*')
+        {
+          ihm.setCursor(0,0);ihm.print("Nivel Bat.:");
+          ihm.setCursor(12, 0); ihm.print(0.008797653*analogRead(A1)+0); //para 9V
+          //ihm.setCursor(12, 0); ihm.print(0.005865102*analogRead(A1)+0); //para 6V
+          ihm.setCursor(0, 1); ihm.print("D-Acessos  *-RET");
+          teclado();
+
+          switch(tecla)
+          {
+            case 'D': // Sub-menu para estátisticas de acesso
+              ihm.clear();
+              while(tecla!='*')
+              {
+                ihm.setCursor(0, 0); ihm.print("Cofre Aberto:");
+                ihm.setCursor(14, 0); ihm.print(cofreAberto);
+                ihm.setCursor(0, 1); ihm.print("Master usada:");
+                ihm.setCursor(14, 1); ihm.print(masterUsada);
+                teclado();
+              }
+            break;
+
+          }
+      }
+        ihm.clear();
+      break;
+      
+      case '#': // Quarto menu para Travar cofre 
+        ihm.clear();
+        while(tecla!='*')
+        {
+          ihm.setCursor(0,0); ihm.print("D-Travar Cofre");
+          ihm.setCursor(0,1); ihm.print("*-Retornar Menu");
+          travarCofre();
+          teclado();
+        }
+        ihm.clear();
+      break;
+  }
+}
+
+//*********************Minhas Funções**************************************************************
+//************************************************************************************************
+//************************************************************************************************
+
+void iniciando(String texto, String textoB, byte posicao, byte posicaoB) 
+{
+    ihm.setCursor(posicao, 0); ihm.print(texto);
+    ihm.setCursor(posicaoB, 1); ihm.print(textoB);
+    delay(2500);
+    ihm.clear();
+}
+
+void teclado() 
+{
+    digitalWrite(4, LOW); digitalWrite(5, HIGH);
+    digitalWrite(6, HIGH); digitalWrite(7, HIGH);
+
+  //Varredura da primeira coluna
+    if (digitalRead(0) == LOW) {
+      tecla = '1';  // 1 do teclado
+      return;
+    }
+    if (digitalRead(1) == LOW) {
+      tecla = '4';  // 4 do teclado
+      return;
+    }
+    if (digitalRead(2) == LOW) {
+      tecla = '7';  // 7 do teclado
+      return;
+    }
+    if (digitalRead(3) == LOW) {
+      tecla = '*';  // * do teclado
+      return;
+    }
+
+    digitalWrite(4, HIGH); digitalWrite(5, LOW);
+    digitalWrite(6, HIGH); digitalWrite(7, HIGH);
+
+    //Varredura da segunda coluna
+    if (digitalRead(0) == LOW) {
+      tecla = 50;  // 2 do teclado
+      return;
+    }
+    if (digitalRead(1) == LOW) {
+      tecla = 53;  // 5 do teclado
+      return;
+    }
+    if (digitalRead(2) == LOW) {
+      tecla = 56;  // 8 do teclado
+      return;
+    }
+    if (digitalRead(3) == LOW) {
+      tecla = 48;  // 0 do teclado
+      return;
+    }
+
+    digitalWrite(4, HIGH); digitalWrite(5, HIGH);
+    digitalWrite(6, LOW); digitalWrite(7, HIGH);
+
+    //Varredura da terceira coluna
+    if (digitalRead(0) == LOW) {
+      tecla = 51;  // 3 do teclado
+      return;
+    }
+    if (digitalRead(1) == LOW) {
+      tecla = 54;  // 6 do teclado
+      return;
+    }
+    if (digitalRead(2) == LOW) {
+      tecla = 57;  // 9 do teclado
+      return;
+    }
+    if (digitalRead(3) == LOW) {
+      tecla = 35;  // # do teclado
+      return;
+    }
+
+    digitalWrite(4, HIGH); digitalWrite(5, HIGH);
+    digitalWrite(6, HIGH); digitalWrite(7, LOW);
+
+    //Varredura da quarta coluna
+    if (digitalRead(0) == LOW) {
+      tecla = 65;  // A do teclado
+      return;
+    }
+    if (digitalRead(1) == LOW) {
+      tecla = 66;  // B do teclado
+      return;
+    }
+    if (digitalRead(2) == LOW) {
+      tecla = 67;  // C do teclado
+      return;
+    }
+    if (digitalRead(3) == LOW) {
+      tecla = 68;  // D do teclado
+      return;
+    }
+
+    tecla = 'S';
+
+}
+
+void digitarSenha() 
+{
+    volta:
+    ihm.setCursor(0,0); ihm.print("Digite Senha:");
+    teclado();
+    while (tecla == 'S') {
+      teclado();
+    }
+    senhaD[coluna] = tecla;
+    ihm.setCursor(coluna, 1); ihm.print(tecla);
+  delay(60);
+  ihm.setCursor(coluna, 1); ihm.print('.');
+    coluna++;
+    while (tecla != 'S') {
+      teclado();
+    }
+    if (coluna == 4)
+    {
+      if (senhaC[0] == senhaD[0] and senhaC[1] == senhaD[1] and senhaC[2] == senhaD[2] and senhaC[3] == senhaD[3] and senhaTravar<=2)
+      {
+        ihm.setCursor(5, 1); ihm.print("Correta");
+        digitalWrite(A5, HIGH);
+        motor.write(90);
+        travado=0;
+        cofreAberto++;
+        senhaErrada=0;
+        senhaTravar=0;
+        delay(1000);
+    }
+    
+    if (senhaC[0] != senhaD[0] or senhaC[1] != senhaD[1] or senhaC[2] != senhaD[2] or senhaC[3] != senhaD[3])
+    {
+        ihm.setCursor(5, 1); ihm.print("Incorreta");
+        senhaErrada++;
+        senhaTravar++;
+        delay(500);
+        if(senhaErrada<3)
+        {
+          coluna=0;
+          ihm.clear();
+          goto volta;
+        }
+    }
+  }
+}
+
+
+void novaSenha() 
+{
+    retorno=0;
+    colunaC=0;
+    volta:
+    ihm.setCursor(0,0); ihm.print("Digite Master:");
+    teclado();
+    while(tecla=='S'){teclado();}
+    senhaD[coluna]=tecla;
+    ihm.setCursor(coluna,1); ihm.print(tecla);
+    coluna++;
+    while(tecla!='S'){teclado();}
+    if(coluna==4)
+    {
+      
+      if(senhaM[0] == senhaD[0] and senhaM[1] == senhaD[1] and senhaM[2] == senhaD[2] and senhaM[3] == senhaD[3])
+      {
+        ihm.clear();
+        while(retorno<=3 and travado==5)
+        {
+          ihm.setCursor(0,0); ihm.print("Nova senha:");
+          teclado();
+          while(tecla=='S'){teclado();}
+          senhaD[colunaC]=tecla;
+          ihm.setCursor(colunaC,1); ihm.print(tecla);
+          delay(60);
+          ihm.setCursor(colunaC,1); ihm.print('.');
+          senhaC[colunaC]=senhaD[colunaC];
+          colunaC++;
+          while(tecla!='S'){teclado();}
+          retorno++; 
+            
+        }
+      masterUsada++;
+     
+      senhaTravar=0;
+      ihm.clear();
+     }
+    }
+}
+
+
+void travarCofre() 
+{
+   teclado();
+   if(tecla=='D')
+   { 
+    travado=0;
+    motor.write(0);
+    travado=5;
+   }
+}
